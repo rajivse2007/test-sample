@@ -193,6 +193,7 @@
             },
             "visible": true,
             "shape": "actor",
+            "zIndex": 1,
             "ports": {
               "groups": {
                 "top": {
@@ -276,7 +277,6 @@
               ]
             },
             "id": "67d8bf78-b8fe-4b5c-b35d-c53eea3bda0c",
-            "zIndex": 1,
             "data": {
               "type": "tm.Actor",
               "name": "End user",
@@ -310,6 +310,7 @@
             },
             "visible": true,
             "shape": "process",
+            "zIndex": 2,
             "ports": {
               "groups": {
                 "top": {
@@ -393,7 +394,6 @@
               ]
             },
             "id": "80612ad8-cfc5-4fcb-bc41-f224b193bf8c",
-            "zIndex": 2,
             "data": {
               "type": "tm.Process",
               "name": "Angular Client SPA",
@@ -430,6 +430,7 @@
             },
             "visible": true,
             "shape": "process",
+            "zIndex": 3,
             "ports": {
               "groups": {
                 "top": {
@@ -513,7 +514,6 @@
               ]
             },
             "id": "ec93c2ca-836c-4455-8856-8fd7739ef4ef",
-            "zIndex": 3,
             "data": {
               "type": "tm.Process",
               "name": "Backend REST API",
@@ -576,7 +576,7 @@
             },
             "vertices": [
               {
-                "x": 440,
+                "x": 480,
                 "y": 70
               }
             ]
