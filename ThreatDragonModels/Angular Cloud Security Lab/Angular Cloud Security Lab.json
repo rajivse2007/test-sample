@@ -10,8 +10,18 @@
   },
   "detail": {
     "contributors": [],
-    "diagrams": [],
-    "diagramTop": 2,
+    "diagrams": [
+      {
+        "id": 2,
+        "title": "App Blueprint",
+        "diagramType": "STRIDE",
+        "placeholder": "New STRIDE diagram description",
+        "thumbnail": "./public/content/images/thumbnail.stride.jpg",
+        "version": "2.6.2",
+        "cells": []
+      }
+    ],
+    "diagramTop": 4,
     "reviewer": "Me",
     "threatTop": 0
   }
