@@ -1,0 +1,63 @@
+# Threagile Architecture-as-Code Configuration
+title: Angular Enterprise SPA Threat Model
+version: 1.0.0
+date: 2026-09-24
+
+# 1. Define the Tech Stack Technologies
+technical_assets:
+  angular_frontend:
+    id: 1
+    description: "Client-side SPA handling dashboard UI and user views."
+    type: web-service-ui
+    usage: business
+    technology: angular
+    tags: [frontend, single-page-app]
+    internet_exposed: true
+    confidentiality: internal
+    integrity: critical
+    availability: high
+    redundancy: parallel
+
+  backend_api:
+    id: 2
+    description: "RESTful API gateway handling business logic and authorization."
+    type: process
+    usage: business
+    technology: web-service
+    tags: [backend, api]
+    internet_exposed: false
+    confidentiality: restricted
+    integrity: critical
+    availability: critical
+
+# 2. Define the Trust Boundaries (Crucial for Angular)
+trust_boundaries:
+  browser_runtime_environment:
+    id: b1
+    description: "Untrusted client-side environment executing JavaScript."
+    type: network-browser-runtime
+    technical_assets_inside: [1]
+
+  secure_corporate_cloud:
+    id: b2
+    description: "Protected server-side environment hosting APIs and Databases."
+    type: network-cloud-provider
+    technical_assets_inside: [2]
+
+# 3. Define Data Assets and Flows
+data_assets:
+  user_session_token:
+    id: d1
+    description: "OAuth2/OIDC JWT access token."
+    confidentiality: restricted
+    integrity: critical
+
+communication_links:
+  angular_to_api:
+    source_technical_asset: 1
+    target_technical_asset: 2
+    description: "HTTPS REST API calls with Bearer Authentication."
+    protocol: https
+    authentication: token
+    authorization: backend-checked
+    data_assets_sent: [d1]
