@@ -1,0 +1,18 @@
+{
+  "version": "2.6.2",
+  "release_version": "1.0.0",
+  "released_at": "2026-09-24",
+  "summary": {
+    "title": "Angular Cloud Security Lab",
+    "owner": "Rajiv Ranjan",
+    "description": "Learning setup evaluating client-side Angular SPAs and backend API boundaries.",
+    "id": 0
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [],
+    "diagramTop": 0,
+    "reviewer": "Me",
+    "threatTop": 0
+  }
+}
