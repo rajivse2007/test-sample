@@ -34,7 +34,7 @@ jobs:
             --source /repo --redact --no-banner \
             --report-format sarif --report-path /repo/reports/gitleaks.sarif
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: gitleaks-report
@@ -75,7 +75,7 @@ jobs:
       - name: Generate CycloneDX SBOM
         run: npx --yes @cyclonedx/cyclonedx-npm@4 --omit dev --output-format JSON --output-file reports/sbom.cdx.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: dependency-reports
@@ -103,7 +103,7 @@ jobs:
         run: |
           jq -e '[.risks.critical, .risks.high | .unchecked + .["in-discussion"] + .["in-progress"]] | add == 0' security/output/stats.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: threagile-report

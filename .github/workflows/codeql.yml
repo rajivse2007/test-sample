@@ -65,7 +65,7 @@ jobs:
           echo "Error-level CodeQL findings: $count"
           test "$count" -eq 0
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: codeql-sarif
