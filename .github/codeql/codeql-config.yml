@@ -1,0 +1,14 @@
+name: SDLC Sample CodeQL configuration
+
+# security-extended adds lower-precision security queries on top of the default suite.
+queries:
+  - uses: security-extended
+
+paths:
+  - src
+
+paths-ignore:
+  - '**/*.spec.ts'
+  - node_modules
+  - dist
+  - .angular

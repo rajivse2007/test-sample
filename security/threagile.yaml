@@ -1,0 +1,342 @@
+threagile_version: 1.0.0
+
+title: SDLC Sample Angular SPA
+date: 2026-10-06
+
+author:
+  name: Application Security Owner (TBD)
+  homepage: https://example.invalid
+
+management_summary_comment: >
+  Initial model. The backend API, identity provider and telemetry collector are
+  ASSUMED components (see SECURITY-APPLICATION-PLAN.md section 2) and
+  must be confirmed or removed before this model is relied on.
+
+business_criticality: important # archive, operational, important, critical, mission-critical
+
+business_overview:
+  description: >
+    Angular single-page application served to browsers. Business functions,
+    user roles and data sensitivity are to be confirmed in the discovery phase.
+  images:
+
+technical_overview:
+  description: >
+    Static Angular bundle served over HTTPS. The browser runs the SPA and calls
+    an assumed backend API, authenticating through an assumed identity provider.
+    Browser errors are sent to an assumed telemetry collector.
+  images:
+
+questions:
+  Which user roles and privileged actions exist?: ''
+  Is a backend API required, and who owns it?: ''
+  Which identity provider and session or token model will be used?: ''
+  What personal or regulated data will be processed?: ''
+
+abuse_cases:
+  Cross-Site Scripting: >
+    Attacker injects script through unsanitized content to steal sessions or act as the user.
+  Account Takeover: >
+    Attacker abuses weak authentication, token theft or session fixation to impersonate a user.
+  Broken Object Level Authorization: >
+    Authenticated user reads or changes another user's data by manipulating identifiers.
+  Software Supply Chain Compromise: >
+    Malicious or vulnerable npm dependency or CI change ships attacker code in the bundle.
+  Sensitive Data in Telemetry: >
+    Tokens or personal data are captured in browser logs or error reports.
+
+security_requirements:
+  Server-side authorization: All access decisions are enforced by the backend; route guards are UX only.
+  No secrets in the bundle: The Angular build output is public and must contain no secrets.
+  Content Security Policy: A strict CSP is deployed, starting in report-only mode.
+  Sanitized telemetry: Logs and error reports exclude tokens, cookies and unneeded personal data.
+
+tags_available:
+  - angular
+  - assumed
+
+data_assets:
+  User Session Credentials:
+    id: session-credentials
+    description: Session cookie or access token identifying the user.
+    usage: business
+    tags:
+    origin: Identity provider
+    owner: TBD
+    quantity: many
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: Theft allows full impersonation of the user.
+
+  Business Data:
+    id: business-data
+    description: Application data shown and edited by users. Classification pending discovery.
+    usage: business
+    tags:
+    origin: Users and backend
+    owner: TBD
+    quantity: many
+    confidentiality: confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: Provisional rating until data classification is complete.
+
+  Client Telemetry:
+    id: client-telemetry
+    description: Browser error reports and performance events.
+    usage: devops
+    tags:
+    origin: Browser
+    owner: TBD
+    quantity: many
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Must be free of credentials and personal data.
+
+technical_assets:
+  User Browser:
+    id: user-browser
+    description: Untrusted browser executing the Angular SPA.
+    type: external-entity
+    usage: business
+    used_as_client_by_human: true
+    out_of_scope: false
+    justification_out_of_scope:
+    size: system
+    technology: browser
+    tags:
+      - angular
+    internet: true
+    machine: physical
+    encryption: none
+    owner: End user
+    confidentiality: confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: Holds session state and displayed business data on an uncontrolled device.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - session-credentials
+      - business-data
+    data_assets_stored:
+    data_formats_accepted:
+      - json
+    communication_links:
+      Load SPA:
+        target: spa-host
+        description: Download of the static Angular bundle.
+        protocol: https
+        authentication: none
+        authorization: none
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: true
+        usage: business
+        data_assets_sent:
+        data_assets_received:
+      API Calls:
+        target: backend-api
+        description: Authenticated REST calls from the SPA.
+        protocol: https
+        authentication: token
+        authorization: enduser-identity-propagation
+        tags:
+          - assumed
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - session-credentials
+          - business-data
+        data_assets_received:
+          - business-data
+      Login:
+        target: identity-provider
+        description: User sign-in using the chosen OIDC or session flow.
+        protocol: https
+        authentication: credentials
+        authorization: none
+        tags:
+          - assumed
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+        data_assets_received:
+          - session-credentials
+      Send Telemetry:
+        target: telemetry-collector
+        description: Browser error and performance reports.
+        protocol: https
+        authentication: none
+        authorization: none
+        tags:
+          - assumed
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops
+        data_assets_sent:
+          - client-telemetry
+        data_assets_received:
+
+  SPA Static Host:
+    id: spa-host
+    description: Web server or CDN serving the Angular bundle and security headers.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: web-server
+    tags:
+      - angular
+    internet: true
+    machine: container
+    encryption: none
+    owner: TBD
+    confidentiality: public
+    integrity: critical
+    availability: important
+    justification_cia_rating: Content is public, but tampering delivers attacker code to every user.
+    multi_tenant: false
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+    data_assets_stored:
+    data_formats_accepted:
+      - file
+    communication_links:
+
+  Backend API:
+    id: backend-api
+    description: ASSUMED REST API enforcing authentication, authorization and validation.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: application
+    technology: web-service-rest
+    tags:
+      - assumed
+    internet: true
+    machine: container
+    encryption: none
+    owner: TBD
+    confidentiality: confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: Authoritative enforcement point for business data.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - business-data
+      - session-credentials
+    data_assets_stored:
+    data_formats_accepted:
+      - json
+    communication_links:
+      Validate Token:
+        target: identity-provider
+        description: Token validation or introspection.
+        protocol: https
+        authentication: client-certificate
+        authorization: technical-user
+        tags:
+          - assumed
+        vpn: false
+        ip_filtered: false
+        readonly: true
+        usage: business
+        data_assets_sent:
+          - session-credentials
+        data_assets_received:
+
+  Identity Provider:
+    id: identity-provider
+    description: ASSUMED OIDC identity provider performing authentication.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: identity-provider
+    tags:
+      - assumed
+    internet: true
+    machine: virtual
+    encryption: transparent
+    owner: TBD
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: Compromise or outage affects every user and the whole system.
+    multi_tenant: false
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - session-credentials
+    data_assets_stored:
+    data_formats_accepted:
+      - json
+    communication_links:
+
+  Telemetry Collector:
+    id: telemetry-collector
+    description: ASSUMED endpoint receiving browser telemetry; treats all input as untrusted.
+    type: process
+    usage: devops
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: monitoring
+    tags:
+      - assumed
+    internet: true
+    machine: container
+    encryption: transparent
+    owner: TBD
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Operational data; abuse can pollute logs or leak sensitive fields.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: false
+    data_assets_processed:
+      - client-telemetry
+    data_assets_stored:
+      - client-telemetry
+    data_formats_accepted:
+      - json
+    communication_links:
+
+trust_boundaries:
+  Hosting Environment:
+    id: hosting-environment
+    description: Server-side components operated by the application owner or its cloud provider.
+    type: network-cloud-provider
+    tags:
+    technical_assets_inside:
+      - spa-host
+      - backend-api
+      - telemetry-collector
+    trust_boundaries_nested:
+
+shared_runtimes:
+
+individual_risk_categories:
+
+risk_tracking:
