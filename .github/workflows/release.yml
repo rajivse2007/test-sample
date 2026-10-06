@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx ng build
+
+      - name: Package bundle, checksum, and SBOM
+        run: |
+          mkdir -p release
+          tar -czf "release/sdlc-sample-${GITHUB_SHA}.tgz" -C dist/sdlc-sample/browser .
+          (cd release && sha256sum "sdlc-sample-${GITHUB_SHA}.tgz" > SHA256SUMS)
+          npx --yes @cyclonedx/cyclonedx-npm@4 --omit dev --output-format JSON --output-file release/sbom.cdx.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: release/
+          retention-days: 90
+
+  report:
+    name: Consolidated security report and gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+      actions: read
+      security-events: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Evaluate gates for this commit
+        run: |
+          set -euo pipefail
+          required=(
+            "Format, lint, test, build"
+            "Secret scan (Gitleaks)"
+            "Dependency audit and SBOM"
+            "Threat model (Threagile)"
+            "Analyze (javascript-typescript)"
+            "OWASP ZAP baseline (local production build)"
+          )
+
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+            --paginate --jq '.check_runs[]' \
+            | jq -s 'group_by(.name) | map(max_by(.started_at) | {name, status, conclusion})' > checks.json
+
+          failed=0
+          {
+            echo "| Gate | Result |"
+            echo "| --- | --- |"
+          } > gates.md
+          for name in "${required[@]}"; do
+            result=$(jq -r --arg n "$name" '.[] | select(.name == $n) | if .status == "completed" then .conclusion else .status end' checks.json)
+            result="${result:-missing}"
+            echo "| $name | $result |" >> gates.md
+            [ "$result" = "success" ] || failed=1
+          done
+
+          summary="unavailable (coverage gap: code scanning results could not be read)"
+          blocking=0
+          if alerts=$(gh api "repos/$GITHUB_REPOSITORY/code-scanning/alerts?state=open&per_page=100" --paginate --jq '.[]' 2>/dev/null); then
+            summary=$(echo "$alerts" | jq -rs 'if length == 0 then "none" else group_by(.rule.security_severity_level // .rule.severity) | map("\(.[0].rule.security_severity_level // .[0].rule.severity): \(length)") | join(", ") end')
+            blocking=$(echo "$alerts" | jq -s '[.[] | select((.rule.security_severity_level // "") | IN("critical", "high"))] | length')
+          fi
+          [ "$blocking" -eq 0 ] || failed=1
+
+          if [ "$failed" -eq 0 ]; then verdict="PASS"; else verdict="FAIL"; fi
+
+          {
+            echo "# Release security report"
+            echo
+            echo "- Version: \`${GITHUB_REF_NAME}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Generated (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "- Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- **Gate result: ${verdict}**"
+            echo
+            echo "## Required checks on this commit"
+            echo
+            cat gates.md
+            echo
+            echo "## Open CodeQL alerts"
+            echo
+            echo "${summary} (blocking if critical or high: ${blocking})"
+            echo
+            echo "## Evidence"
+            echo
+            echo "- Reports: \`gitleaks-report\`, \`dependency-reports\` (npm audit, SBOM), \`threagile-report\`, \`zap-baseline-report\` artifacts on the Security and DAST runs for this commit."
+            echo "- Accepted risks and exceptions: see \`security/reporting.md\` and \`security/risk-register.md\`; review expiry dates before approving."
+            echo "- Coverage limits: DAST scans the local production build without authentication; no backend is covered yet."
+          } > release-report.md
+
+          cat release-report.md >> "$GITHUB_STEP_SUMMARY"
+          [ "$failed" -eq 0 ]
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-report
+          path: release-report.md
+          retention-days: 365
+
+  publish:
+    name: Publish GitHub release
+    needs: [build, report]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-report
+          path: report
+
+      - name: Create release with artifacts and report
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file report/release-report.md \
+            release/*

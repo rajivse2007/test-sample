@@ -1,6 +1,6 @@
 # Security-First Application Plan
 
-Status: Foundation implemented (ESLint/Prettier, Threagile model, CodeQL, CI, secret and dependency scanning, SBOM, ZAP baseline DAST, security headers, browser logging, reporting and runbooks). Backend, authentication, the telemetry collector, authenticated DAST, and production hosting are pending the discovery decisions in section 2.
+Status: Foundation implemented (ESLint/Prettier, Threagile model, CodeQL, CI, secret and dependency scanning, SBOM, ZAP baseline DAST, security headers, browser logging, reporting and runbooks, release workflow with consolidated security report, branch protection ruleset). Backend, authentication, the telemetry collector, authenticated DAST, deployment, and production hosting are pending the discovery decisions in section 2.
 
 ## 1. Goal and Scope
 

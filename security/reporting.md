@@ -39,4 +39,12 @@ Each report records commit SHA, workflow run, scanner and version, scan time (UT
 
 ## Release report
 
-Before each release, summarize in the release notes: gate results, new and fixed findings since the last release, open exceptions with expiry, scan coverage gaps, and links to the artifacts above.
+`release.yml` runs on a `v*` tag (or manually). It builds the bundle with a SHA-256 checksum and SBOM, then generates `release-report.md`: the latest result of each required check on the tagged commit, open CodeQL alerts by severity, evidence links, and coverage limits. The report fails if any required check is not `success` or any critical or high CodeQL alert is open. On a tag it publishes a GitHub release with the bundle, checksum, SBOM, and report.
+
+- Tag a commit only after CI, Security, CodeQL, and DAST have finished for it; checks still running count as not passing.
+- Review accepted-risk expiry dates above before tagging.
+- Not yet covered: new and fixed findings since the previous release, and deployment (hosting is undecided).
+
+## Branch protection
+
+`.github/rulesets/main-protection.json` is a repository ruleset for `main`: no deletion or force push, pull request required, and the CI, Gitleaks, dependency, Threagile, and CodeQL checks must pass. DAST is excluded because it does not run on pull requests. Import it in GitHub: Settings > Rules > Rulesets > New ruleset > Import a ruleset. Required checks only appear for selection after each workflow has run once.
