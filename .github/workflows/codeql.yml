@@ -40,3 +40,29 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: /language:javascript-typescript
+          output: sarif-results
+
+      - name: Summarize findings
+        if: always()
+        run: |
+          {
+            echo "## CodeQL results"
+            echo
+            if ls sarif-results/*.sarif > /dev/null 2>&1; then
+              echo "| Level | Findings |"
+              echo "| --- | --- |"
+              jq -rs '[.[].runs[].results[]] | group_by(.level // "warning") | map("| \(.[0].level // "warning") | \(length) |") | .[]' sarif-results/*.sarif
+              total=$(jq -s '[.[].runs[].results[]] | length' sarif-results/*.sarif)
+              echo "| **Total** | **$total** |"
+            else
+              echo "No SARIF output was produced; treat as a coverage gap."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-sarif
+          path: sarif-results/
+          if-no-files-found: warn
+          retention-days: 90

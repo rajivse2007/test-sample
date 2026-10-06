@@ -2,14 +2,14 @@
 
 Generated reports are CI artifacts, not source files. They may contain exploit details and internal URLs: restrict them to engineering and security roles.
 
-| Report           | Produced by                | Artifact / location                 | Format               | Retention           |
-| ---------------- | -------------------------- | ----------------------------------- | -------------------- | ------------------- |
-| SAST findings    | CodeQL (`codeql.yml`)      | GitHub Security > Code scanning     | SARIF                | Per GitHub settings |
-| Secret scan      | Gitleaks (`security.yml`)  | `gitleaks-report`                   | SARIF (redacted)     | 30 days             |
-| Dependency audit | npm audit (`security.yml`) | `dependency-reports/npm-audit.json` | JSON                 | 90 days             |
-| SBOM             | CycloneDX (`security.yml`) | `dependency-reports/sbom.cdx.json`  | CycloneDX JSON       | 90 days             |
-| Threat model     | Threagile (`security.yml`) | `threagile-report`                  | PDF, XLSX, JSON, PNG | 90 days             |
-| DAST baseline    | ZAP (`dast.yml`)           | `zap-baseline-report`               | HTML, JSON, Markdown | 90 days             |
+| Report           | Produced by                | Artifact / location                                      | Format                      | Retention          |
+| ---------------- | -------------------------- | -------------------------------------------------------- | --------------------------- | ------------------ |
+| SAST findings    | CodeQL (`codeql.yml`)      | GitHub Security > Code scanning; `codeql-sarif` artifact | SARIF (summary in run page) | 90 days (artifact) |
+| Secret scan      | Gitleaks (`security.yml`)  | `gitleaks-report`                                        | SARIF (redacted)            | 30 days            |
+| Dependency audit | npm audit (`security.yml`) | `dependency-reports/npm-audit.json`                      | JSON                        | 90 days            |
+| SBOM             | CycloneDX (`security.yml`) | `dependency-reports/sbom.cdx.json`                       | CycloneDX JSON              | 90 days            |
+| Threat model     | Threagile (`security.yml`) | `threagile-report`                                       | PDF, XLSX, JSON, PNG        | 90 days            |
+| DAST baseline    | ZAP (`dast.yml`)           | `zap-baseline-report`                                    | HTML, JSON, Markdown        | 90 days            |
 
 ## Required content
 
