@@ -1,0 +1,85 @@
+name: DAST
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: dast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zap-baseline:
+    name: OWASP ZAP baseline (local production build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Serves the production build with the security headers from angular.json.
+      - name: Start application
+        run: |
+          nohup npx ng serve --configuration production --port 4200 > serve.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:4200 > /dev/null && exit 0
+            sleep 2
+          done
+          cat serve.log
+          exit 1
+
+      - name: Run ZAP baseline scan
+        run: |
+          mkdir -p zap-out
+          chmod 777 zap-out
+          set +e
+          docker run --rm --network host -v "$PWD/zap-out:/zap/wrk:rw" \
+            -v "$PWD/.zap:/zap/rules:ro" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:4200 -c /zap/rules/rules.tsv \
+            -J report.json -r report.html -w report.md
+          echo "ZAP_EXIT=$?" >> "$GITHUB_ENV"
+
+      - name: Summarize results
+        if: always()
+        run: |
+          {
+            echo "## DAST (ZAP baseline) results"
+            echo
+            echo "Target: local production build, commit \`$GITHUB_SHA\`"
+            echo
+            echo "| Risk | Alerts |"
+            echo "| --- | --- |"
+            for level in "3:High" "2:Medium" "1:Low" "0:Informational"; do
+              code="${level%%:*}"; name="${level##*:}"
+              count=$(jq "[.site[].alerts[] | select(.riskcode == \"$code\")] | length" zap-out/report.json 2>/dev/null || echo "n/a")
+              echo "| $name | $count |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce gate (no High alerts, no failed rules)
+        run: |
+          jq -e '[.site[].alerts[] | select(.riskcode == "3")] | length == 0' zap-out/report.json
+          test "${ZAP_EXIT:-1}" != "1"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-baseline-report
+          path: zap-out/
+          retention-days: 90

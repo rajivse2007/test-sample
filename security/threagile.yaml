@@ -4,7 +4,7 @@ title: SDLC Sample Angular SPA
 date: 2026-10-06
 
 author:
-  name: Application Security Owner (TBD)
+  name: Rajiv Ranjan
   homepage: https://example.invalid
 
 management_summary_comment: >
@@ -62,7 +62,7 @@ data_assets:
     usage: business
     tags:
     origin: Identity provider
-    owner: TBD
+    owner: Rajiv Ranjan
     quantity: many
     confidentiality: strictly-confidential
     integrity: critical
@@ -75,7 +75,7 @@ data_assets:
     usage: business
     tags:
     origin: Users and backend
-    owner: TBD
+    owner: Rajiv Ranjan
     quantity: many
     confidentiality: confidential
     integrity: critical
@@ -88,7 +88,7 @@ data_assets:
     usage: devops
     tags:
     origin: Browser
-    owner: TBD
+    owner: Rajiv Ranjan
     quantity: many
     confidentiality: internal
     integrity: operational
@@ -202,7 +202,7 @@ technical_assets:
     internet: true
     machine: container
     encryption: none
-    owner: TBD
+    owner: Rajiv Ranjan
     confidentiality: public
     integrity: critical
     availability: important
@@ -231,7 +231,7 @@ technical_assets:
     internet: true
     machine: container
     encryption: none
-    owner: TBD
+    owner: Rajiv Ranjan
     confidentiality: confidential
     integrity: critical
     availability: important
@@ -277,7 +277,7 @@ technical_assets:
     internet: true
     machine: virtual
     encryption: transparent
-    owner: TBD
+    owner: Rajiv Ranjan
     confidentiality: strictly-confidential
     integrity: critical
     availability: critical
@@ -307,7 +307,7 @@ technical_assets:
     internet: true
     machine: container
     encryption: transparent
-    owner: TBD
+    owner: Rajiv Ranjan
     confidentiality: internal
     integrity: operational
     availability: operational

@@ -1,0 +1,6 @@
+# ZAP baseline rule configuration: ID<TAB>ACTION<TAB>(optional name)
+# Actions: IGNORE, INFO, WARN, FAIL. Rules not listed use their default.
+# Fail the build if CSP or anti-clickjacking protection regresses.
+10038	FAIL	(Content Security Policy (CSP) Header Not Set)
+10020	FAIL	(Missing Anti-clickjacking Header)
+10021	FAIL	(X-Content-Type-Options Header Missing)

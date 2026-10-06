@@ -1,0 +1,111 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '41 3 * * *'
+
+permissions: {}
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan history (redacted)
+        run: |
+          mkdir -p reports
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect \
+            --source /repo --redact --no-banner \
+            --report-format sarif --report-path /repo/reports/gitleaks.sarif
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gitleaks-report
+          path: reports/gitleaks.sarif
+          if-no-files-found: ignore
+          retention-days: 30
+
+  dependencies:
+    name: Dependency audit and SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Audit production dependencies (blocking on high)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit all dependencies (blocking on critical)
+        run: npm audit --audit-level=critical
+
+      - name: Record full audit report
+        if: always()
+        run: |
+          mkdir -p reports
+          npm audit --json > reports/npm-audit.json || true
+
+      - name: Generate CycloneDX SBOM
+        run: npx --yes @cyclonedx/cyclonedx-npm@4 --omit dev --output-format JSON --output-file reports/sbom.cdx.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-reports
+          path: reports/
+          retention-days: 90
+
+  threat-model:
+    name: Threat model (Threagile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate model and generate reports
+        run: |
+          mkdir -p security/output
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/security:/app/work" threagile/threagile:latest \
+            -model /app/work/threagile.yaml -output /app/work/output
+
+      - name: Fail on unresolved critical or high risks
+        run: |
+          jq -e '[.risks.critical, .risks.high | .unchecked + .["in-discussion"] + .["in-progress"]] | add == 0' security/output/stats.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: threagile-report
+          path: security/output/
+          retention-days: 90
