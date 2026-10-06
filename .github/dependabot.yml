@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # Angular 20 requires zone.js ~0.15.0; remove when upgrading Angular.
+      - dependency-name: zone.js
+        versions: ['>=0.16.0']
     groups:
       angular:
         patterns:
